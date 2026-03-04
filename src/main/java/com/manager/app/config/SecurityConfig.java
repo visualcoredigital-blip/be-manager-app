@@ -15,6 +15,8 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+@EnableWebSecurity
+@EnableMethodSecurity // <--- ESTA ES LA CLAVE
 public class SecurityConfig {
 
     @Autowired
