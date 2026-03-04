@@ -25,32 +25,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
+        // 1. OMITIR FILTRO PARA EL ENDPOINT DE SALUD
+        // Esto evita que si no hay token, el filtro cause ruido en la seguridad
+        String path = request.getServletPath();
+        if ("/api/contacts/public/health".equals(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             
-            if (jwtUtils.validateToken(token)) {
-                String username = jwtUtils.getUsernameFromToken(token);
-                
-                // 1. Extraemos el rol del token usando el nuevo método en JwtUtils
-                String role = jwtUtils.getRoleFromToken(token);
-                
-                if (username != null && role != null) {
-                    // 2. Convertimos el String del rol (ej: "ROLE_ADMIN") en una autoridad
-                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
+            try {
+                if (jwtUtils.validateToken(token)) {
+                    String username = jwtUtils.getUsernameFromToken(token);
+                    String role = jwtUtils.getRoleFromToken(token);
                     
-                    // 3. Creamos la lista de autoridades
-                    List<SimpleGrantedAuthority> authorities = Collections.singletonList(authority);
+                    if (username != null && role != null) {
+                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
+                        List<SimpleGrantedAuthority> authorities = Collections.singletonList(authority);
 
-                    // 4. Creamos la autenticación incluyendo las autoridades (roles)
-                    UsernamePasswordAuthenticationToken auth = 
-                        new UsernamePasswordAuthenticationToken(username, null, authorities);
-                    
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                        UsernamePasswordAuthenticationToken auth = 
+                            new UsernamePasswordAuthenticationToken(username, null, authorities);
+                        
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                    }
                 }
+            } catch (Exception e) {
+                // Si el token es inválido o expiró, simplemente no seteamos la autenticación
+                // Spring Security se encargará de rechazarlo en las rutas protegidas
+                logger.error("Error validando token JWT: " + e.getMessage());
             }
         }
         filterChain.doFilter(request, response);
     }
+
 }

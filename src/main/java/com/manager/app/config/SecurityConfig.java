@@ -33,8 +33,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/contacts/**").authenticated()
+                // 1. LA EXCEPCIÓN DEBE IR PRIMERO
                 .requestMatchers("/api/contacts/public/health").permitAll()
+                
+                // 2. LUEGO PROTEGEMOS TODO LO DEMÁS BAJO /api/contacts/
+                .requestMatchers("/api/contacts/**").authenticated()
+                
+                // 3. EL RESTO (POR SI ACASO)
                 .anyRequest().permitAll()
             );
 
