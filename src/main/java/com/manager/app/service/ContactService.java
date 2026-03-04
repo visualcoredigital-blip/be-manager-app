@@ -18,7 +18,6 @@ public class ContactService {
     public List<Contact> getAllContacts() {
         // LOG DE PRUEBA
         List<Contact> contacts = contactRepository.findAll();
-        contacts.forEach(c -> System.out.println("Contacto: " + c.getNombre() + " - Tel: " + c.getTelefono()));
         return contacts;
     }
 
