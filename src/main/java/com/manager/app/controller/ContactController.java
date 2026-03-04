@@ -51,4 +51,9 @@ public class ContactController {
             return ResponseEntity.status(401).body("Error de comunicación: " + e.getMessage());
         }
     }
+
+    @GetMapping("/public/health")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok("OK");
+    }
 }
