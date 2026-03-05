@@ -38,12 +38,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Tu URL de Vercel exacta:
-        config.setAllowedOrigins(Arrays.asList("https://visualcoredigital-manager.vercel.app", "http://localhost:5173"));
+        config.setAllowedOrigins(Arrays.asList("https://visualcoredigital-manager.vercel.app"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         config.setAllowCredentials(true);
-        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
