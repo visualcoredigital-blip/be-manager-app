@@ -25,7 +25,7 @@ public class ContactController {
 
     // Leemos la URL del Auth Service desde las variables de entorno
     // Si no existe (en Docker local), usa el valor por defecto
-    @Value("${MS_AUTH_SERVICE}")
+    @Value("${MS_AUTH_SERVICE:http://auth-service:8001/api/auth/login}")
     private String authServiceUrl;
 
     @GetMapping
