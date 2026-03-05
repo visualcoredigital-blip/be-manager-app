@@ -3,8 +3,9 @@ package com.manager.app.controller;
 import com.manager.app.model.Contact;
 import com.manager.app.service.ContactService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value; // <--- IMPORTANTE
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // <--- NUEVO IMPORT
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -13,7 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/contacts")
-@CrossOrigin(origins = "http://localhost:5173")
+// Eliminamos @CrossOrigin de aquí porque ya lo manejamos globalmente en SecurityConfig
 public class ContactController {
 
     @Autowired
@@ -22,16 +23,19 @@ public class ContactController {
     @Autowired
     private RestTemplate restTemplate;
 
-    // 1. Ambos roles pueden ver la lista
+    // Leemos la URL del Auth Service desde las variables de entorno
+    // Si no existe (en Docker local), usa el valor por defecto
+    @Value("${MS_AUTH_SERVICE}")
+    private String authServiceUrl;
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     public List<Contact> getAll() {
         return contactService.getAllContacts();
     }
 
-    // 2. Solo el ADMIN puede cambiar el estado
     @PostMapping("/{id}/status")
-    @PreAuthorize("hasRole('ROLE_ADMIN')") // <--- RESTRICCIÓN AQUÍ
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Contact> updateStatus(@PathVariable String id, @RequestBody Map<String, String> body) {
         try {
             String nuevoEstado = body.get("estado");
@@ -44,19 +48,14 @@ public class ContactController {
 
     @PostMapping("/auth/login-proxy")
     public ResponseEntity<?> loginProxy(@RequestBody Map<String, Object> loginRequest) {
-        // En Docker, usamos el nombre del servicio
-        String authServiceUrl = "http://auth-service:8001/api/auth/login"; 
-        
+        // Ahora usamos la variable inyectada, no una fija
         try {
-            // Usamos Object.class para recibir cualquier respuesta (Token o Error)
             return restTemplate.postForEntity(authServiceUrl, loginRequest, Object.class);
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
-            // Captura errores 401, 403, 400 del Auth-Service y los devuelve al Frontend
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
-            // Si llega aquí, es un error de red o de código (como RestTemplate null)
-            System.err.println("Error en Proxy: " + e.getMessage());
-            return ResponseEntity.status(500).body("Error de comunicación con Auth-Service: " + e.getMessage());
+            System.err.println("Error en Proxy hacia " + authServiceUrl + ": " + e.getMessage());
+            return ResponseEntity.status(500).body("Error de comunicación: " + e.getMessage());
         }
     }
 
