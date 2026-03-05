@@ -50,6 +50,7 @@ public class ContactController {
     public ResponseEntity<?> loginProxy(@RequestBody Map<String, Object> loginRequest) {
         // Ahora usamos la variable inyectada, no una fija
         try {
+            System.out.println("DEBUG: Intentando proxy hacia: " + authServiceUrl);
             return restTemplate.postForEntity(authServiceUrl, loginRequest, Object.class);
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
@@ -62,5 +63,11 @@ public class ContactController {
     @GetMapping("/public/health")
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("OK");
+    }
+
+    // Esto es para que Render reciba un "OK" cuando haga el test de vida
+    @GetMapping("/")
+    public ResponseEntity<String> home() {
+        return ResponseEntity.ok("Backend Manager is Running");
     }
 }

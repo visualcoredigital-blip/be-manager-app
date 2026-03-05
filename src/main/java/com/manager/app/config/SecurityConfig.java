@@ -27,6 +27,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ACTIVAMOS CORS
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/").permitAll()
                 .requestMatchers("/api/contacts/public/**").permitAll()
                 .requestMatchers("/api/contacts/auth/**").permitAll()                .anyRequest().permitAll() // Dejamos permitAll momentáneamente para asegurar el arranque
             );
