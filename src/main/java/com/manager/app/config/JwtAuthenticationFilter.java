@@ -24,15 +24,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
+
         // 1. OMITIR FILTRO PARA EL ENDPOINT DE SALUD
         // Esto evita que si no hay token, el filtro cause ruido en la seguridad
         String path = request.getServletPath();
-        if ("/api/contacts/public/health".equals(path)) {
-            filterChain.doFilter(request, response);
-            return;
+        if (path.equals("/api/contacts/public/health") || 
+                path.equals("/api/contacts/auth/login-proxy")) {
+                filterChain.doFilter(request, response);
+                return;
         }
-
+        
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
