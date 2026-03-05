@@ -48,18 +48,20 @@ public class ContactController {
 
     @PostMapping("/auth/login-proxy")
     public ResponseEntity<?> loginProxy(@RequestBody Map<String, Object> loginRequest) {
-        // Ahora usamos la variable inyectada, no una fija
         try {
-            System.out.println("DEBUG: Intentando proxy hacia: " + authServiceUrl);
+            System.out.println("DEBUG: Enviando POST a: " + authServiceUrl);
             return restTemplate.postForEntity(authServiceUrl, loginRequest, Object.class);
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            // Esto captura errores 401, 403, 500 del Auth Service
+            System.err.println("AUTH SERVICE DIJO: " + e.getRawStatusCode());
+            System.err.println("BODY: " + e.getResponseBodyAsString());
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
-            System.err.println("Error en Proxy hacia " + authServiceUrl + ": " + e.getMessage());
-            return ResponseEntity.status(500).body("Error de comunicación: " + e.getMessage());
+            // Esto captura Timeouts o fallos de conexión
+            System.err.println("FALLO CRÍTICO PROXY: " + e.getMessage());
+            return ResponseEntity.status(504).body("Servicio Auth no disponible");
         }
     }
-
     @GetMapping("/public/health")
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("OK");
