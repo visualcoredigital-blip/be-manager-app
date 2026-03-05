@@ -33,16 +33,15 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 1. LA EXCEPCIÓN DEBE IR PRIMERO
+                // 1. LAS EXCEPCIONES PÚBLICAS (No requieren token)
                 .requestMatchers("/api/contacts/public/health").permitAll()
-                
-                // 2. LUEGO PROTEGEMOS TODO LO DEMÁS BAJO /api/contacts/
+                .requestMatchers("/api/contacts/auth/login-proxy").permitAll() // <--- AÑADE ESTA LÍNEA AQUÍ
+                // 2. PROTEGEMOS EL RESTO DE LAS RUTAS DE CONTACTOS
                 .requestMatchers("/api/contacts/**").authenticated()
                 
-                // 3. EL RESTO (POR SI ACASO)
-                .anyRequest().permitAll()
+                // 3. CUALQUIER OTRA RUTA
+                .anyRequest().authenticated() 
             );
-
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();

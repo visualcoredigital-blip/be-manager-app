@@ -43,12 +43,20 @@ public class ContactController {
     }
 
     @PostMapping("/auth/login-proxy")
-    public ResponseEntity<String> loginProxy(@RequestBody Object loginRequest) {
-        String authServiceUrl = "http://localhost:8081/api/auth/login";
+    public ResponseEntity<?> loginProxy(@RequestBody Map<String, Object> loginRequest) {
+        // En Docker, usamos el nombre del servicio
+        String authServiceUrl = "http://auth-service:8001/api/auth/login"; 
+        
         try {
-            return restTemplate.postForEntity(authServiceUrl, loginRequest, String.class);
+            // Usamos Object.class para recibir cualquier respuesta (Token o Error)
+            return restTemplate.postForEntity(authServiceUrl, loginRequest, Object.class);
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            // Captura errores 401, 403, 400 del Auth-Service y los devuelve al Frontend
+            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Error de comunicación: " + e.getMessage());
+            // Si llega aquí, es un error de red o de código (como RestTemplate null)
+            System.err.println("Error en Proxy: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error de comunicación con Auth-Service: " + e.getMessage());
         }
     }
 
