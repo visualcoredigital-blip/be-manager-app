@@ -12,9 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    public SecurityConfig() {
+            System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            System.out.println("DEBUG: EL ARCHIVO SECURITYCONFIG SE HA CARGADO EN EL CONTEXTO");
+            System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    }
+
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
-
+ 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
