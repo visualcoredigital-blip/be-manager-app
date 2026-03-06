@@ -48,20 +48,47 @@ public class ContactController {
 
     @PostMapping("/auth/login-proxy")
     public ResponseEntity<?> loginProxy(@RequestBody Map<String, Object> loginRequest) {
+
         try {
-            System.out.println("DEBUG: Enviando POST a: " + authServiceUrl);
-            return restTemplate.postForEntity(authServiceUrl, loginRequest, Object.class);
+
+            System.out.println("AUTH URL: " + authServiceUrl);
+            System.out.println("BODY ENVIADO: " + loginRequest);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> entity =
+                    new HttpEntity<>(loginRequest, headers);
+
+            ResponseEntity<String> response =
+                    restTemplate.postForEntity(authServiceUrl, entity, String.class);
+
+            System.out.println("RESPUESTA AUTH STATUS: " + response.getStatusCode());
+            System.out.println("RESPUESTA AUTH BODY: " + response.getBody());
+
+            return ResponseEntity
+                    .status(response.getStatusCode())
+                    .body(response.getBody());
+
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
-            // Esto captura errores 401, 403, 500 del Auth Service
+
             System.err.println("AUTH SERVICE DIJO: " + e.getRawStatusCode());
             System.err.println("BODY: " + e.getResponseBodyAsString());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+
+            return ResponseEntity
+                    .status(e.getStatusCode())
+                    .body(e.getResponseBodyAsString());
+
         } catch (Exception e) {
-            // Esto captura Timeouts o fallos de conexión
+
             System.err.println("FALLO CRÍTICO PROXY: " + e.getMessage());
-            return ResponseEntity.status(504).body("Servicio Auth no disponible");
+
+            return ResponseEntity
+                    .status(504)
+                    .body("Servicio Auth no disponible");
         }
     }
+
     @GetMapping("/public/health")
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("OK");
