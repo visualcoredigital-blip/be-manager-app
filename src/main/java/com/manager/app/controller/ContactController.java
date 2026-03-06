@@ -12,6 +12,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpStatusCodeException;
 
 import java.util.List;
@@ -53,21 +58,22 @@ public class ContactController {
 
     @PostMapping("/auth/login-proxy")
     public ResponseEntity<?> loginProxy(@RequestBody Map<String, Object> loginRequest) {
-
         try {
 
             System.out.println("AUTH URL -> " + authServiceUrl);
 
-            return restTemplate.postForEntity(
-                    authServiceUrl,
-                    loginRequest,
-                    Object.class
-            );
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> request =
+                    new HttpEntity<>(loginRequest, headers);
+
+            ResponseEntity<Object> response =
+                    restTemplate.postForEntity(authServiceUrl, request, Object.class);
+
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
 
         } catch (HttpStatusCodeException e) {
-
-            System.err.println("AUTH STATUS: " + e.getStatusCode());
-            System.err.println("AUTH BODY: " + e.getResponseBodyAsString());
 
             return ResponseEntity
                     .status(e.getStatusCode())
@@ -75,11 +81,11 @@ public class ContactController {
 
         } catch (Exception e) {
 
-            System.err.println("AUTH CONNECTION ERROR: " + e.getMessage());
+            System.err.println("PROXY ERROR -> " + e.getMessage());
 
             return ResponseEntity
-                    .status(504)
-                    .body("Auth service no disponible");
+                    .status(HttpStatus.BAD_GATEWAY)
+                    .body("Auth service unreachable");
         }
     }
 
