@@ -32,8 +32,13 @@ public class ContactController {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${MS_AUTH_SERVICE:http://auth-service:8001/api/auth/login}")
+    // Base URL del auth-service
+    @Value("${MS_AUTH_SERVICE:http://auth-service:8001}")
     private String authServiceUrl;
+
+    // Endpoints del auth-service
+    private static final String LOGIN_PATH = "/api/auth/login";
+    private static final String USERS_PATH = "/api/auth/users";
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_USER')")
@@ -60,27 +65,26 @@ public class ContactController {
     public ResponseEntity<?> loginProxy(@RequestBody Map<String, Object> loginRequest) {
         try {
 
-            System.out.println("AUTH URL -> " + authServiceUrl);
-
+            String loginUrl = authServiceUrl + LOGIN_PATH;
+            System.out.println("AUTH URL -> " + loginUrl);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-
             HttpEntity<Map<String, Object>> request =
                     new HttpEntity<>(loginRequest, headers);
 
             ResponseEntity<Object> response =
-                    restTemplate.postForEntity(authServiceUrl, request, Object.class);
+                    restTemplate.postForEntity(loginUrl, request, Object.class);
 
-            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+            return ResponseEntity
+                    .status(response.getStatusCode())
+                    .body(response.getBody());
 
         } catch (HttpStatusCodeException e) {
-
             return ResponseEntity
                     .status(e.getStatusCode())
                     .body(e.getResponseBodyAsString());
 
         } catch (Exception e) {
-
             System.err.println("PROXY ERROR -> " + e.getMessage());
 
             return ResponseEntity
