@@ -1,10 +1,7 @@
 package com.manager.app.service;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -21,39 +18,81 @@ public class AuthServiceClient {
     private static final String USERS_PATH = "/api/users";
     private final RestTemplate restTemplate = new RestTemplate();
 
+    // --- MÉTODOS PÚBLICOS ---
+
     public Object getUsers() {
-        String url = authServiceUrl + USERS_PATH;
+        return executeRequest(USERS_PATH, HttpMethod.GET, null, "obtener usuarios");
+    }
+
+    public Object createUser(Object createUserRequest) {
+        return executeRequest(USERS_PATH + "/create", HttpMethod.POST, createUserRequest, "crear usuario");
+    }
+
+    public void deleteUser(Long id) {
+        executeRequest(USERS_PATH + "/" + id, HttpMethod.DELETE, null, "eliminar usuario");
+    }
+
+    public Object updateUser(Long id, Object updateUserRequest) {
+        return executeRequest(USERS_PATH + "/" + id, HttpMethod.PUT, updateUserRequest, "editar usuario");
+    }
+
+    /**
+     * Centraliza la lógica de intercambio, headers y manejo de errores.
+     */
+    private Object executeRequest(String path, HttpMethod method, Object body, String actionName) {
+        String url = authServiceUrl + path;
+        HttpHeaders headers = createHeaders();
+        HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+
+        try {
+            System.out.println("🚀 Llamando a Auth-Service [" + method + "] " + path);
+            
+            // Usamos String.class para recibir la respuesta cruda y evitar errores de parseo JSON
+            ResponseEntity<String> response = restTemplate.exchange(url, method, entity, String.class);
+            
+            // Si el método es DELETE o la respuesta es exitosa pero vacía, devolvemos null o el body
+            if (method == HttpMethod.DELETE || response.getStatusCode() == HttpStatus.OK) {
+                return response.getBody();
+            }
+            return response.getBody();
+
+        } catch (HttpClientErrorException.Forbidden e) {
+            logError(actionName, "403 Forbidden");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para " + actionName);
+        } catch (HttpClientErrorException.Unauthorized e) {
+            logError(actionName, "401 Unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
+        } catch (Exception e) {
+            // Log detallado del error para saber exactamente qué falló
+            System.err.println("❌ Detalle técnico del error: " + e.getMessage());
+            logError(actionName, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error al " + actionName);
+        }
+    }
+
+    /**
+     * Extrae automáticamente el token del contexto de la petición actual.
+     */
+    private HttpHeaders createHeaders() {
+        HttpHeaders headers = new HttpHeaders();
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         
-        String token = null;
         if (attributes != null) {
-            token = attributes.getRequest().getHeader("Authorization");
-        }
-
-        HttpHeaders headers = new HttpHeaders();
-        if (token != null && !token.isEmpty()) {
-            String cleanToken = token.trim();
-            headers.set("Authorization", cleanToken);
-            // Log de seguridad para depuración
-            String logToken = cleanToken.length() > 15 ? cleanToken.substring(0, 15) : cleanToken;
-            System.out.println("✅ Reenviando token al Auth-Service: " + logToken + "...");
+            String token = attributes.getRequest().getHeader("Authorization");
+            if (token != null && !token.isEmpty()) {
+                headers.set("Authorization", token.trim());
+                // Log opcional para debug
+                String logToken = token.length() > 15 ? token.substring(0, 15) : token;
+                System.out.println("🔑 Token propagado: " + logToken + "...");
+            }
         }
         
         headers.set("Accept", "application/json");
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        headers.set("Content-Type", "application/json");
+        return headers;
+    }
 
-        try {
-            return restTemplate.exchange(url, HttpMethod.GET, entity, Object.class).getBody();
-        } catch (HttpClientErrorException.Forbidden e) {
-            System.err.println("❌ El Auth-Service denegó el acceso (403). El usuario no tiene rol ADMIN.");
-            // Lanzamos una excepción que Spring MVC entiende como un 403 real
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos de administrador");
-        } catch (HttpClientErrorException.Unauthorized e) {
-            System.err.println("❌ Token inválido o expirado (401).");
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida o expirada");
-        } catch (Exception e) {
-            System.err.println("❌ Error inesperado al contactar Auth-Service: " + e.getMessage());
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error en la comunicación entre servicios");
-        }
+    private void logError(String action, String message) {
+        System.err.println("❌ Error al " + action + ": " + message);
     }
 }
