@@ -21,4 +21,26 @@ public class UserController {
         Object users = authServiceClient.getUsers();
         return ResponseEntity.ok(users);
     }
+
+    @PostMapping("/create")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> createUser(@RequestBody Object createUserRequest) {
+        // Usamos Object o un DTO específico para recibir el JSON del frontend
+        Object response = authServiceClient.createUser(createUserRequest);
+        return ResponseEntity.ok(response);
+    }    
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        authServiceClient.deleteUser(id);
+        return ResponseEntity.ok().build(); // Devolvemos un 200 limpio
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Object updateUserRequest) {
+        Object response = authServiceClient.updateUser(id, updateUserRequest);
+        return ResponseEntity.ok(response);
+    }    
 }
