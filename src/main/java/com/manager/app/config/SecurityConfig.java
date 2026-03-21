@@ -29,12 +29,19 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
+                // Rutas base y públicas de contactos
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/api/contacts/public/**").permitAll()
                 .requestMatchers("/api/contacts/auth/**").permitAll()
-                .anyRequest().permitAll()
+                .requestMatchers("/api/users/forgot-password").permitAll()
+                .requestMatchers("/api/users/reset-password").permitAll()                
+                
+                // El resto de las rutas de usuarios requieren autenticación
+                // (Se complementa con los @PreAuthorize que ya tienes en el Controller)
+                .anyRequest().authenticated()
             );
 
+        // El filtro de JWT se ejecuta antes, pero ignorará las rutas permitidas arriba
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -42,7 +49,6 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(Arrays.asList(
@@ -50,19 +56,8 @@ public class SecurityConfig {
                 "https://visualcoredigital-manager.vercel.app"
         ));
 
-        config.setAllowedMethods(Arrays.asList(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS"
-        ));
-
-        config.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type"
-        ));
-
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
