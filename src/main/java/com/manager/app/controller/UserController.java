@@ -53,4 +53,11 @@ public class UserController {
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Object updateUserRequest) {
         return ResponseEntity.ok(authServiceClient.updateUser(id, updateUserRequest));
     }
+
+    @GetMapping("/exists")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> checkEmailExists(@RequestParam String email, @RequestParam(required = false) Long id) {
+        // La lógica de comunicación con el servicio debe encapsularse en el AuthServiceClient
+        return ResponseEntity.ok(authServiceClient.checkEmailExists(email, id));
+    }
 }

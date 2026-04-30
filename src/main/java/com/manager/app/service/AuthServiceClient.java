@@ -51,6 +51,12 @@ public class AuthServiceClient {
         return executeRequest(USERS_PATH + "/" + id, HttpMethod.PUT, updateUserRequest, "editar usuario");
     }
 
+    public Object checkEmailExists(String email, Long id) {
+        // Construimos la URL con parámetros de consulta (?email=...&userId=...)
+        String urlParams = "/exists?email=" + email + (id != null ? "&userId=" + id : "");
+        return executeRequest(USERS_PATH + urlParams, HttpMethod.GET, null, "validar email");
+    }
+
     private Object executeRequest(String path, HttpMethod method, Object body, String actionName) {
         String url = authServiceUrl + path;
         HttpHeaders headers = createHeaders();
