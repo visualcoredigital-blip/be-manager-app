@@ -2,11 +2,13 @@ package com.manager.app.service;
 
 import com.manager.app.model.Contact;
 import com.manager.app.repository.ContactRepository;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ContactService {
@@ -14,8 +16,13 @@ public class ContactService {
     @Autowired
     private ContactRepository contactRepository;
 
+    public Page<Contact> getPaginatedContacts(int page, int size) {
+        // Ordenamos por fecha descendente para que los nuevos aparezcan primero
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fecha").descending());
+        return contactRepository.findAll(pageable);
+    }
+
     public List<Contact> getAllContacts() {
-        // LOG DE PRUEBA
         List<Contact> contacts = contactRepository.findAll();
         return contacts;
     }
