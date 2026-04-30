@@ -5,7 +5,7 @@ import com.manager.app.service.ContactService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,7 +19,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpStatusCodeException;
 
-import java.util.List;
+
 import java.util.Map;
 
 @RestController
@@ -38,12 +38,15 @@ public class ContactController {
 
     // Endpoints del auth-service
     private static final String LOGIN_PATH = "/api/auth/login";
-    private static final String USERS_PATH = "/api/auth/users";
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_USER')")
-    public List<Contact> getAll() {
-        return contactService.getAllContacts();
+    public ResponseEntity<Page<Contact>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        
+        Page<Contact> contacts = contactService.getPaginatedContacts(page, size);
+        return ResponseEntity.ok(contacts);
     }
 
     @PostMapping("/{id}/status")

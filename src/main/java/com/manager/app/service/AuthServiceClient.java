@@ -1,6 +1,5 @@
 package com.manager.app.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -9,8 +8,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.manager.app.dto.ResetPasswordDTO;
 
 import java.util.HashMap;
@@ -24,38 +21,17 @@ public class AuthServiceClient {
     
     private static final String USERS_PATH = "/api/users";
     private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper objectMapper = new ObjectMapper(); // Para procesar el JSON de respuesta
-
-    @Autowired
-    private EmailService emailService; // INYECCIÓN NECESARIA
 
     public Object processForgotPassword(String email) {
         Map<String, String> body = new HashMap<>();
         body.put("email", email);
         
-        // 1. Llamada al MS-Auth para validar y generar el token
-        Object response = executeRequest(USERS_PATH + "/forgot-password", HttpMethod.POST, body, "procesar recuperación");
-        
-        try {
-            // 2. Extraer el token de la respuesta String que devuelve executeRequest
-            // Asumimos que el MS-Auth responde algo como: {"token": "xyz123...", "message": "..."}
-            JsonNode root = objectMapper.readTree(response.toString());
-            String tokenParaEmail = root.path("token").asText();
-
-            if (tokenParaEmail != null && !tokenParaEmail.isEmpty()) {
-                // 3. Enviar el correo usando el nuevo servicio
-                emailService.sendPasswordRecoveryEmail(email, tokenParaEmail);
-            }
-        } catch (Exception e) {
-            System.err.println("⚠️ No se pudo extraer el token o enviar el email: " + e.getMessage());
-            // Opcional: podrías lanzar una excepción aquí si el envío es crítico
-        }
-        
-        return response;
+        // Ahora solo delegamos. El Auth-Service se encargará de generar el token 
+        // Y de llamar a su propio EmailService internamente.
+        return executeRequest(USERS_PATH + "/forgot-password", HttpMethod.POST, body, "procesar recuperación");
     }
 
     public Object processResetPassword(ResetPasswordDTO request) {
-        // Reutilizamos executeRequest que ya maneja URL, cabeceras y errores
         return executeRequest(USERS_PATH + "/reset-password", HttpMethod.POST, request, "restablecer contraseña");
     }
 
@@ -81,7 +57,7 @@ public class AuthServiceClient {
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);
 
         try {
-            System.out.println("🚀 Llamando a Auth-Service [" + method + "] " + path);
+            System.out.println("🚀 Delegando a Auth-Service [" + method + "] " + path);
             ResponseEntity<String> response = restTemplate.exchange(url, method, entity, String.class);
             return response.getBody();
 
@@ -121,5 +97,4 @@ public class AuthServiceClient {
     private void logError(String action, String message) {
         System.err.println("❌ Error al " + action + ": " + message);
     }
-
 }
