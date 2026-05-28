@@ -7,19 +7,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.security.access.prepost.PreAuthorize;
-
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpStatusCodeException;
 
-
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -32,11 +29,9 @@ public class ContactController {
     @Autowired
     private RestTemplate restTemplate;
 
-    // Base URL del auth-service
     @Value("${MS_AUTH_SERVICE:http://auth-service:8001}")
     private String authServiceUrl;
 
-    // Endpoints del auth-service
     private static final String LOGIN_PATH = "/api/auth/login";
 
     @GetMapping
@@ -47,6 +42,21 @@ public class ContactController {
         
         Page<Contact> contacts = contactService.getPaginatedContacts(page, size);
         return ResponseEntity.ok(contacts);
+    }
+
+    @PostMapping("/export")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_USER')")
+    public ResponseEntity<Map<String, String>> exportToPdf(@RequestBody(required = false) Map<String, Object> filter) {
+        
+        String exportId = contactService.sendExportEvent(filter);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "PROCESSING");
+        response.put("message", "La generación del archivo PDF ha iniciado en segundo plano.");
+        response.put("exportId", exportId);
+        response.put("fileNamePattern", "contacts-" + exportId + "-YYYY-MM-DD-[hash].pdf");
+
+        return ResponseEntity.accepted().body(response);
     }
 
     @PostMapping("/{id}/status")
@@ -67,7 +77,6 @@ public class ContactController {
     @PostMapping("/auth/login-proxy")
     public ResponseEntity<?> loginProxy(@RequestBody Map<String, Object> loginRequest) {
         try {
-
             String loginUrl = authServiceUrl + LOGIN_PATH;
             System.out.println("AUTH URL -> " + loginUrl);
             HttpHeaders headers = new HttpHeaders();

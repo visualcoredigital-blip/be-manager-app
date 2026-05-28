@@ -36,10 +36,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/forgot-password").permitAll()
                 .requestMatchers("/api/users/reset-password").permitAll()                
                 
+                .requestMatchers("/api/contacts/reports/**").permitAll()                
+                
                 // El resto de las rutas de usuarios requieren autenticación
-                // (Se complementa con los @PreAuthorize que ya tienes en el Controller)
                 .anyRequest().authenticated()
             );
+
 
         // El filtro de JWT se ejecuta antes, pero ignorará las rutas permitidas arriba
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
